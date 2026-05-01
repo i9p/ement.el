@@ -9,6 +9,7 @@
 
 (require 'cl-lib)
 (require 'json)
+(require 'ement-lib)
 (require 'ement-structs)
 
 (defcustom ement-crypto-worker-path (expand-file-name "ement-crypto-worker.py" (file-name-directory (or load-file-name (buffer-file-name))))

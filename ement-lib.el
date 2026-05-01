@@ -50,6 +50,15 @@
 
 ;;;; Variables
 
+(defgroup ement nil
+  "Options for Ement, the Matrix client."
+  :group 'comm)
+
+(defcustom ement-sessions-file "~/.cache/ement.el"
+  ;; FIXME: Expand correct XDG cache directory (new in Emacs 27).
+  "Save username and access token to this file."
+  :type 'file)
+
 (defvar ement-sessions)
 (defvar ement-users)
 (defvar ement-ewoc)

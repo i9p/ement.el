@@ -121,10 +121,6 @@ by users; ones who do so should know what they're doing.")
   "Faces for Ement."
   :group 'ement)
 
-(defgroup ement nil
-  "Options for Ement, the Matrix client."
-  :group 'comm)
-
 (defcustom ement-save-sessions nil
   "Save session to disk.
 Writes the session file when Emacs is killed."
@@ -134,11 +130,6 @@ Writes the session file when Emacs is killed."
          (if value
              (add-hook 'kill-emacs-hook #'ement--kill-emacs-hook)
            (remove-hook 'kill-emacs-hook #'ement--kill-emacs-hook))))
-
-(defcustom ement-sessions-file "~/.cache/ement.el"
-  ;; FIXME: Expand correct XDG cache directory (new in Emacs 27).
-  "Save username and access token to this file."
-  :type 'file)
 
 (defcustom ement-auto-sync t
   "Automatically sync again after syncing."
