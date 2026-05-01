@@ -62,6 +62,7 @@
 (require 'ement-room)
 (require 'ement-notifications)
 (require 'ement-notify)
+(require 'ement-crypto)
 
 ;;;; Variables
 
@@ -934,6 +935,21 @@ and `session' to the session.  Adds function to
 
 ;; I love how Lisp macros make it so easy and concise to define these
 ;; event handlers!
+
+(ement-defevent "m.room.encryption"
+  (setf (ement-room-encryption room) (ement-event-content event)))
+
+(ement-defevent "m.room.encrypted"
+  (ement-crypto-command session "decrypt_megolm"
+                        (list (cons 'event (ement-event-content event))
+                              (cons 'sender_key (alist-get 'sender_key (ement-event-content event)))
+                              (cons 'session_id (alist-get 'session_id (ement-event-content event))))
+                        (lambda (result)
+                          (when (alist-get 'decrypted result)
+                            (setf (alist-get 'decrypted-content (ement-event-local event))
+                                  (alist-get 'decrypted result))
+                            ;; Re-render the event in room buffers.
+                            (ement-room--refresh-event event)))))
 
 (ement-defevent "m.room.avatar"
   (when ement-room-avatars

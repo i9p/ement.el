@@ -201,6 +201,7 @@ keymap directly the issue may be visible.")
     (define-key map (kbd "u RET") #'ement-send-direct-message)
     (define-key map (kbd "u i") #'ement-invite-user)
     (define-key map (kbd "u I") #'ement-ignore-user)
+    (define-key map (kbd "u v") #'ement-room-verify-device)
 
     ;; Room
     (define-key map (kbd "M-s o") #'ement-room-occur)
@@ -1540,6 +1541,52 @@ Note that, if ROOM has no buffer, STRING is returned unchanged."
     ;; `bookmark-jump' returns.
     (run-at-time nil nil (lambda ()
                            (goto-char (point-max))))))
+
+(defun ement-room-verify-device (user-id device-id session)
+  "Initiate SAS verification with USER-ID's DEVICE-ID on SESSION."
+  (interactive
+   (let* ((session ement-session)
+          (user-id (ement-complete-user-id))
+          ;; For simplicity, we'll just prompt for device ID for now.
+          (device-id (read-string "Device ID: ")))
+     (list user-id device-id session)))
+  (ement-crypto-command session "sas_start"
+                        (list (cons 'user_id user-id)
+                              (cons 'device_id device-id))
+                        (lambda (result)
+                          (let ((emojis (alist-get 'emojis result)))
+                            (ement-room-display-verification-emojis emojis user-id device-id session)))))
+
+(defun ement-room-display-verification-emojis (emojis user-id device-id session)
+  "Display EMOJIS for verification with USER-ID/DEVICE-ID on SESSION."
+  (let ((buffer (get-buffer-create (format "*Ement Verification: %s*" user-id))))
+    (with-current-buffer buffer
+      (erase-buffer)
+      (insert (format "Verify device %s of user %s\n\n" device-id user-id))
+      (insert "Do these emojis match the ones on the other client?\n\n")
+      (dolist (emoji emojis)
+        (insert (format "%s %s  " (elt emoji 1) (elt emoji 0))))
+      (insert "\n\n")
+      (insert-button "MATCH" 'action (lambda (_)
+                                       (ement-crypto-command session "sas_confirm" nil
+                                                             (lambda (_) (message "Verification confirmed!")))
+                                       (kill-buffer buffer)))
+      (insert "    ")
+      (insert-button "NO MATCH" 'action (lambda (_) (kill-buffer buffer))))
+    (pop-to-buffer buffer)))
+
+(defun ement-room--refresh-event (event)
+  "Refresh EVENT in its room buffer."
+  (cl-loop for session in (mapcar #'cdr ement-sessions)
+           do (cl-loop for room in (ement-session-rooms session)
+                       for buffer = (map-elt (ement-room-local room) 'buffer)
+                       when (buffer-live-p buffer)
+                       do (with-current-buffer buffer
+                            (when-let ((node (ewoc-locate ement-ewoc (lambda (data)
+                                                                       (and (ement-event-p data)
+                                                                            (equal (ement-event-id event)
+                                                                                   (ement-event-id data)))))))
+                              (ewoc-invalidate ement-ewoc node))))))
 
 ;;;; Commands
 
@@ -3970,7 +4017,8 @@ seconds."
 Formats according to `ement-room-message-format-spec', which see."
   (concat (pcase (ement-event-type event)
             ;; TODO: Define these with a macro, like the defevent and format-spec ones.
-            ("m.room.message" (ement-room--format-message event room session))
+            ((or "m.room.message" "m.room.encrypted")
+             (ement-room--format-message event room session))
             ("m.room.member"
              (widget-create 'ement-room-membership
                             :button-face 'ement-room-membership
@@ -4146,8 +4194,10 @@ Format defaults to `ement-room-message-format-spec', which see."
 If FORMATTED-P, return the formatted body content, when available."
   (pcase-let* (((cl-struct ement-event content
                            (unsigned (map ('redacted_by unsigned-redacted-by)))
-                           (local (map ('redacted-by local-redacted-by))))
+                           (local (map ('redacted-by local-redacted-by)
+                                       ('decrypted-content decrypted-content))))
                 event)
+               (content (or decrypted-content content))
                ((map ('body main-body) msgtype ('format content-format) ('formatted_body formatted-body)
                      ('m.relates_to (map ('rel_type rel-type)))
                      ('m.new_content (map ('body new-body) ('formatted_body new-formatted-body)

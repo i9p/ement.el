@@ -18,6 +18,8 @@
 # ELPA badge image.
 [[https://elpa.gnu.org/packages/ement.html][https://elpa.gnu.org/packages/ement.svg]]
 
+*this is vibe coded*
+
 Ement.el is a [[http://www.matrix.org/][Matrix]] client for [[https://www.gnu.org/software/emacs/][GNU Emacs]].  It aims to be simple, fast, featureful, and reliable, while integrating naturally with Emacs.
 
 Feel free to join us in the chat room: [[https://matrix.to/#/#ement.el:matrix.org][https://img.shields.io/matrix/ement.el:matrix.org.svg?label=%23ement.el:matrix.org]]

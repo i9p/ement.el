@@ -66,7 +66,8 @@
   device-id initial-device-display-name has-synced-p
   account-data
   ;; Hash table of all seen events, keyed on event ID.
-  events)
+  events
+  (crypto nil :documentation "E2EE crypto state."))
 
 (cl-defstruct ement-room
   id display-name prev-batch
@@ -76,7 +77,8 @@
   ;; The local slot is an alist used by the local client only.
   local
   (receipts (make-hash-table :test #'equal))
-  (displaynames (make-hash-table) :documentation "Hash table mapping users to their displayname in this room."))
+  (displaynames (make-hash-table) :documentation "Hash table mapping users to their displayname in this room.")
+  (encryption nil :documentation "E2EE encryption state."))
 
 ;;;; Variables
 
